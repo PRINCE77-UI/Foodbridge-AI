@@ -1,0 +1,1376 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0E5C3A">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/icon.svg">
+  <link rel="apple-touch-icon" href="/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="description" content="Donate surplus food. Verified NGOs and volunteers deliver it before it spoils.">
+  <title>FoodBridge: surplus food to people in need</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=Source+Sans+3:wght@400;600;700&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <style>
+    :root {
+      --bg: #F3F6F3;
+      --card: #fff;
+      --ink: #0F1F17;
+      --mute: #62736A;
+      --line: #E1E8E3;
+      --g1: #0E5C3A;
+      --g2: #1F8A57;
+      --leaf: #17784B;
+      --leaf2: #E2F3E9;
+      --sun: #F5A300;
+      --sun2: #FFF1CC;
+      --red: #C93A25;
+      --red2: #FCE3DE;
+      --blue: #2A67B0;
+      --blue2: #E0ECF8;
+      --shadow: 0 6px 20px rgba(15, 31, 23, .08);
+      --hdr: rgba(255, 255, 255, .92)
+    }
+
+    @media(prefers-color-scheme:dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #0C1511;
+        --card: #15231B;
+        --ink: #EAF2EC;
+        --mute: #9BB0A4;
+        --line: #263A2E;
+        --leaf: #4FBF80;
+        --leaf2: #1A3626;
+        --sun2: #3A3014;
+        --red: #F2745E;
+        --red2: #40201A;
+        --blue: #6AA8E8;
+        --blue2: #1B2F45;
+        --shadow: 0 6px 20px rgba(0, 0, 0, .35);
+        --hdr: rgba(21, 35, 27, .92)
+      }
+    }
+
+    :root[data-theme="dark"] {
+      --bg: #0C1511;
+      --card: #15231B;
+      --ink: #EAF2EC;
+      --mute: #9BB0A4;
+      --line: #263A2E;
+      --leaf: #4FBF80;
+      --leaf2: #1A3626;
+      --sun2: #3A3014;
+      --red: #F2745E;
+      --red2: #40201A;
+      --blue: #6AA8E8;
+      --blue2: #1B2F45;
+      --shadow: 0 6px 20px rgba(0, 0, 0, .35);
+      --hdr: rgba(21, 35, 27, .92)
+    }
+
+    * {
+      box-sizing: border-box
+    }
+
+    html,
+    body {
+      margin: 0
+    }
+
+    html {
+      scroll-behavior: smooth
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font: 16px/1.5 "Source Sans 3", system-ui, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      padding-bottom: 64px
+    }
+
+    h1,
+    h2,
+    h3 {
+      font-family: "Bricolage Grotesque", system-ui, sans-serif;
+      margin: 0;
+      letter-spacing: -.015em
+    }
+
+    a {
+      color: inherit
+    }
+
+    .wrap {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 0 16px
+    }
+
+    .narrow {
+      max-width: 560px;
+      margin: 0 auto
+    }
+
+    section {
+      scroll-margin-top: 76px
+    }
+
+    .site {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: var(--hdr);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--line);
+      padding-top: env(safe-area-inset-top, 0px)
+    }
+
+    .site .wrap {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      height: 62px
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font: 800 21px "Bricolage Grotesque", system-ui, sans-serif;
+      color: var(--g1);
+      text-decoration: none;
+      cursor: pointer;
+      background: none;
+      border: 0;
+      padding: 0
+    }
+
+    @media(prefers-color-scheme:dark) {
+      :root:not([data-theme="light"]) .site .logo {
+        color: var(--leaf)
+      }
+    }
+
+    .logo i {
+      width: 32px;
+      height: 32px;
+      border-radius: 10px;
+      background: var(--sun);
+      display: grid;
+      place-items: center;
+      font-style: normal;
+      font-size: 18px
+    }
+
+    .dnav {
+      display: none;
+      gap: 4px;
+      margin-left: 12px;
+      flex: 1
+    }
+
+    .dnav button,
+    .dnav a {
+      white-space: nowrap;
+      border: 0;
+      background: none;
+      font: 700 15px "Source Sans 3", system-ui, sans-serif;
+      color: var(--mute);
+      padding: 8px 12px;
+      border-radius: 10px;
+      cursor: pointer;
+      text-decoration: none
+    }
+
+    .dnav button:hover,
+    .dnav a:hover {
+      background: var(--bg);
+      color: var(--ink)
+    }
+
+    .dnav button.on {
+      background: var(--leaf2);
+      color: var(--leaf)
+    }
+
+    .sp {
+      flex: 1
+    }
+
+    .hbtn {
+      font: 700 14.5px "Source Sans 3", system-ui, sans-serif;
+      border-radius: 10px;
+      padding: 9px 16px;
+      cursor: pointer;
+      border: 1.5px solid var(--line);
+      background: var(--card);
+      color: var(--ink)
+    }
+
+    .hbtn.p {
+      background: linear-gradient(150deg, var(--g1), var(--g2));
+      border-color: transparent;
+      color: #fff
+    }
+
+    .me {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg);
+      border: 1px solid var(--line);
+      border-radius: 99px;
+      padding: 3px 12px 3px 3px;
+      color: var(--ink);
+      font: 700 14px inherit;
+      cursor: pointer
+    }
+
+    .av {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: var(--g1);
+      color: #fff;
+      display: grid;
+      place-items: center;
+      font-weight: 800
+    }
+
+    .bellb {
+      position: relative;
+      border: 0;
+      background: var(--bg);
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      cursor: pointer;
+      color: var(--ink);
+      display: grid;
+      place-items: center
+    }
+
+    .bellb svg,
+    .nav svg {
+      width: 22px;
+      height: 22px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.9;
+      stroke-linecap: round;
+      stroke-linejoin: round
+    }
+
+    .dot {
+      position: absolute;
+      top: -3px;
+      right: -3px;
+      background: var(--red);
+      color: #fff;
+      border-radius: 99px;
+      font-size: 11px;
+      min-width: 17px;
+      padding: 0 4px;
+      line-height: 17px;
+      text-align: center
+    }
+
+    .hideM {
+      display: none
+    }
+
+    .hd {
+      background: linear-gradient(150deg, var(--g1), var(--g2));
+      color: #fff;
+      padding: 26px 0 30px
+    }
+
+    .hd.big {
+      padding-bottom: 70px
+    }
+
+    .hd h2 {
+      font-size: 30px;
+      line-height: 1.1
+    }
+
+    .hd p {
+      margin: 6px 0 0;
+      opacity: .9;
+      max-width: 44ch
+    }
+
+    .float {
+      margin: 0 0 14px;
+      background: var(--card);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      padding: 14px 6px
+    }
+
+    .float>div {
+      text-align: center;
+      padding: 0 4px
+    }
+
+    .float>div+div {
+      border-left: 1px solid var(--line)
+    }
+
+    .float b {
+      display: block;
+      font: 800 26px "Bricolage Grotesque", system-ui, sans-serif;
+      color: var(--leaf)
+    }
+
+    .float small {
+      color: var(--mute);
+      font-size: 12.5px
+    }
+
+    .pull {
+      margin-top: -46px;
+      position: relative
+    }
+
+    .gap {
+      margin-top: 20px
+    }
+
+    .ttl {
+      font-size: 22px;
+      margin: 18px 0 12px
+    }
+
+    .sub {
+      color: var(--mute);
+      font-size: 14px
+    }
+
+    .grid {
+      display: grid;
+      gap: 14px
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      padding: 14px 14px 14px 18px;
+      position: relative;
+      overflow: hidden
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 5px;
+      background: var(--sun)
+    }
+
+    .card.s-accepted::before,
+    .card.s-picked::before {
+      background: var(--blue)
+    }
+
+    .card.s-delivered::before {
+      background: var(--leaf)
+    }
+
+    .card.s-expired::before {
+      background: var(--red)
+    }
+
+    .top {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start
+    }
+
+    .ico {
+      width: 46px;
+      height: 46px;
+      border-radius: 14px;
+      background: var(--sun2);
+      display: grid;
+      place-items: center;
+      font-size: 25px;
+      flex: none
+    }
+
+    .top h3 {
+      font-size: 18px;
+      line-height: 1.15
+    }
+
+    .meta {
+      color: var(--mute);
+      font-size: 14px;
+      margin-top: 2px
+    }
+
+    .pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 10px
+    }
+
+    .pill {
+      font-size: 12.5px;
+      font-weight: 700;
+      border-radius: 99px;
+      padding: 3px 10px;
+      background: var(--bg);
+      color: var(--mute)
+    }
+
+    .pill.warm {
+      background: var(--sun2);
+      color: #8A6200
+    }
+
+    .pill.bad {
+      background: var(--red2);
+      color: var(--red)
+    }
+
+    .pill.ok,
+    .pill.good {
+      background: var(--leaf2);
+      color: var(--leaf)
+    }
+
+    .pill.info {
+      background: var(--blue2);
+      color: var(--blue)
+    }
+
+    @media(prefers-color-scheme:dark) {
+      :root:not([data-theme="light"]) .pill.warm {
+        color: var(--sun)
+      }
+    }
+
+    .trk {
+      display: flex;
+      margin-top: 14px
+    }
+
+    .trk .s {
+      flex: 1;
+      text-align: center;
+      position: relative;
+      font-size: 11px;
+      color: var(--mute);
+      font-weight: 600
+    }
+
+    .trk .s i {
+      display: block;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--line);
+      margin: 0 auto 4px;
+      position: relative;
+      z-index: 1
+    }
+
+    .trk .s+.s::before {
+      content: "";
+      position: absolute;
+      top: 6px;
+      left: -50%;
+      width: 100%;
+      height: 2px;
+      background: var(--line)
+    }
+
+    .trk .s.on i,
+    .trk .s.on+.s.on::before {
+      background: var(--leaf)
+    }
+
+    .trk .s.on {
+      color: var(--ink)
+    }
+
+    .btn {
+      font: 700 16px "Source Sans 3", system-ui, sans-serif;
+      border: 0;
+      border-radius: 14px;
+      padding: 14px 16px;
+      background: linear-gradient(150deg, var(--g1), var(--g2));
+      color: #fff;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 12px;
+      box-shadow: 0 4px 12px rgba(14, 92, 58, .25);
+      transition: transform .08s
+    }
+
+    .btn:active {
+      transform: scale(.98)
+    }
+
+    .btn.alt {
+      background: var(--card);
+      color: var(--ink);
+      border: 1px solid var(--line);
+      box-shadow: none
+    }
+
+    .btn.sun {
+      background: var(--sun);
+      color: #2A1D00;
+      box-shadow: 0 4px 12px rgba(245, 163, 0, .3)
+    }
+
+    .btn.auto {
+      width: auto;
+      padding: 14px 26px;
+      display: inline-block
+    }
+
+    label {
+      display: block;
+      font-weight: 700;
+      font-size: 13.5px;
+      margin: 14px 0 5px
+    }
+
+    input,
+    select {
+      width: 100%;
+      font: inherit;
+      color: var(--ink);
+      background: var(--bg);
+      border: 1.5px solid var(--line);
+      border-radius: 12px;
+      padding: 12px 13px
+    }
+
+    input:focus,
+    select:focus {
+      outline: none;
+      border-color: var(--leaf);
+      background: var(--card)
+    }
+
+    .two {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px
+    }
+
+    .safety {
+      background: var(--sun2);
+      border-radius: 12px;
+      padding: 11px 13px;
+      margin-top: 16px;
+      font-size: 14px
+    }
+
+    .formcard {
+      background: var(--card);
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+      padding: 6px 18px 18px
+    }
+
+    .roles {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-top: 14px
+    }
+
+    .role {
+      border: 2px solid var(--line);
+      background: var(--bg);
+      border-radius: 14px;
+      padding: 12px 4px;
+      text-align: center;
+      font: inherit;
+      color: var(--ink);
+      cursor: pointer
+    }
+
+    .role.on {
+      border-color: var(--leaf);
+      background: var(--leaf2)
+    }
+
+    .role b {
+      display: block;
+      font-size: 24px
+    }
+
+    .role span {
+      font-size: 12.5px;
+      font-weight: 700
+    }
+
+    .err {
+      color: var(--red);
+      font-size: 14px;
+      margin-top: 10px;
+      min-height: 18px
+    }
+
+    .link {
+      background: none;
+      border: 0;
+      color: var(--leaf);
+      font: 700 15px inherit;
+      cursor: pointer;
+      margin-top: 12px;
+      width: 100%
+    }
+
+    .hero {
+      background: linear-gradient(150deg, var(--g1), var(--g2));
+      color: #fff;
+      padding: 44px 0 56px
+    }
+
+    .hero .wrap {
+      display: grid;
+      gap: 30px;
+      align-items: center
+    }
+
+    .hero h1 {
+      font-size: clamp(36px, 7vw, 56px);
+      line-height: 1.02
+    }
+
+    .hero p {
+      font-size: 18px;
+      opacity: .92;
+      max-width: 40ch;
+      margin: 14px 0 22px
+    }
+
+    .hero .btns {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap
+    }
+
+    .hero .btn {
+      margin: 0
+    }
+
+    .hero .btn.alt {
+      background: rgba(255, 255, 255, .14);
+      color: #fff;
+      border-color: rgba(255, 255, 255, .35)
+    }
+
+    .badge {
+      display: inline-block;
+      background: rgba(255, 255, 255, .16);
+      border-radius: 99px;
+      padding: 4px 12px;
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 14px
+    }
+
+    .demo {
+      color: var(--ink);
+      transform: rotate(1.5deg)
+    }
+
+    .demo small {
+      display: block;
+      color: #fff;
+      opacity: .85;
+      margin: 0 0 8px 4px;
+      font-weight: 700
+    }
+
+    .sec {
+      padding: 44px 0 6px
+    }
+
+    .sec h2 {
+      font-size: 30px
+    }
+
+    .sec>.wrap>p {
+      color: var(--mute);
+      max-width: 56ch;
+      margin: 6px 0 20px
+    }
+
+    .step {
+      background: var(--card);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      padding: 18px
+    }
+
+    .step b {
+      display: grid;
+      place-items: center;
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      background: var(--leaf2);
+      color: var(--leaf);
+      font: 800 19px "Bricolage Grotesque", system-ui, sans-serif;
+      margin-bottom: 10px
+    }
+
+    .step h3 {
+      font-size: 18px;
+      margin-bottom: 4px
+    }
+
+    .step p {
+      margin: 0;
+      color: var(--mute);
+      font-size: 15px
+    }
+
+    .agent .em {
+      font-size: 30px;
+      margin-bottom: 6px
+    }
+
+    .authsec {
+      padding: 44px 0
+    }
+
+    .authsec .formcard {
+      max-width: 480px;
+      margin: 0 auto
+    }
+
+    .authsec h2 {
+      text-align: center;
+      font-size: 28px;
+      margin-bottom: 16px
+    }
+
+    .live {
+      display: flex;
+      gap: 22px;
+      flex-wrap: wrap;
+      margin-top: 24px
+    }
+
+    .live span {
+      font-size: 13.5px;
+      opacity: .95
+    }
+
+    .live b {
+      display: block;
+      font: 800 28px "Bricolage Grotesque", system-ui, sans-serif
+    }
+
+    .tag-note {
+      font-size: 12px
+    }
+
+    .foot {
+      background: #0B3D28;
+      color: #D7E8DD;
+      margin-top: 48px;
+      padding: 38px 0 18px
+    }
+
+    .foot .cols {
+      display: grid;
+      gap: 26px
+    }
+
+    .foot h4 {
+      margin: 0 0 10px;
+      font: 700 14px "Source Sans 3", sans-serif;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: #fff
+    }
+
+    .foot p {
+      margin: 6px 0;
+      font-size: 14.5px;
+      opacity: .9
+    }
+
+    .foot a,
+    .foot button.fl {
+      display: block;
+      color: #D7E8DD;
+      text-decoration: none;
+      font: 15px "Source Sans 3", sans-serif;
+      padding: 3px 0;
+      background: none;
+      border: 0;
+      cursor: pointer;
+      text-align: left
+    }
+
+    .foot a:hover,
+    .foot button.fl:hover {
+      color: #fff;
+      text-decoration: underline
+    }
+
+    .foot .logo {
+      color: #fff;
+      margin-bottom: 8px
+    }
+
+    .sdg {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #DDA63A;
+      color: #2A1D00;
+      border-radius: 8px;
+      padding: 5px 10px;
+      font-weight: 800;
+      font-size: 13px;
+      margin-top: 8px
+    }
+
+    .foot .low {
+      border-top: 1px solid rgba(255, 255, 255, .16);
+      margin-top: 26px;
+      padding-top: 14px;
+      font-size: 13px;
+      opacity: .8;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 18px;
+      justify-content: space-between
+    }
+
+    .empty {
+      text-align: center;
+      color: var(--mute);
+      padding: 34px 14px;
+      grid-column: 1/-1
+    }
+
+    .empty b {
+      display: block;
+      font-size: 46px;
+      margin-bottom: 6px
+    }
+
+    .fab {
+      position: fixed;
+      right: 16px;
+      bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+      background: var(--sun);
+      color: #2A1D00;
+      border: 0;
+      border-radius: 99px;
+      padding: 14px 20px;
+      font: 800 16px "Source Sans 3", system-ui, sans-serif;
+      box-shadow: 0 8px 20px rgba(245, 163, 0, .45);
+      cursor: pointer;
+      z-index: 5
+    }
+
+    .nav {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: var(--card);
+      border-top: 1px solid var(--line);
+      display: flex;
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+      z-index: 15
+    }
+
+    .nav button {
+      flex: 1;
+      border: 0;
+      background: none;
+      padding: 10px 2px 11px;
+      font: 700 11.5px "Source Sans 3", system-ui, sans-serif;
+      color: var(--mute);
+      cursor: pointer;
+      position: relative
+    }
+
+    .nav svg {
+      display: block;
+      margin: 0 auto 3px;
+      width: 24px;
+      height: 24px
+    }
+
+    .nav .dot {
+      top: 5px;
+      left: calc(50% + 6px);
+      right: auto
+    }
+
+    .nav button.on {
+      color: var(--leaf)
+    }
+
+    .nav button.on::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 30%;
+      right: 30%;
+      height: 3px;
+      border-radius: 0 0 3px 3px;
+      background: var(--leaf)
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+      background: var(--ink);
+      color: var(--bg);
+      padding: 11px 18px;
+      border-radius: 99px;
+      font-size: 14.5px;
+      font-weight: 600;
+      z-index: 30;
+      max-width: 90%;
+      box-shadow: var(--shadow);
+      animation: up .25s
+    }
+
+    @keyframes up {
+      from {
+        opacity: 0;
+        transform: translate(-50%, 10px)
+      }
+    }
+
+    .alert {
+      display: flex;
+      gap: 12px;
+      background: var(--card);
+      border-radius: 16px;
+      padding: 12px;
+      box-shadow: var(--shadow)
+    }
+
+    .alert.new {
+      border-left: 4px solid var(--sun)
+    }
+
+    .alert i {
+      font-style: normal;
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      background: var(--leaf2);
+      display: grid;
+      place-items: center;
+      flex: none
+    }
+
+    .note {
+      font-size: 13px;
+      color: var(--mute);
+      margin-top: 8px
+    }
+
+    :focus-visible {
+      outline: 3px solid var(--sun);
+      outline-offset: 2px
+    }
+
+    @media(min-width:760px) {
+      body {
+        padding-bottom: 0
+      }
+
+      .dnav {
+        display: flex
+      }
+
+      .nav {
+        display: none
+      }
+
+      .hideM {
+        display: inline-flex
+      }
+
+      .fab {
+        bottom: 28px;
+        right: 28px
+      }
+
+      .toast {
+        bottom: 28px
+      }
+
+      .grid.c2 {
+        grid-template-columns: 1fr 1fr
+      }
+
+      .grid.c3 {
+        grid-template-columns: repeat(3, 1fr)
+      }
+
+      .grid.c5 {
+        grid-template-columns: repeat(3, 1fr)
+      }
+
+      .hero .wrap {
+        grid-template-columns: 1.1fr .9fr
+      }
+
+      .foot .cols {
+        grid-template-columns: 1.6fr 1fr 1fr 1.2fr
+      }
+
+      .hd h2 {
+        font-size: 36px
+      }
+    }
+
+    @media(min-width:960px) {
+      .grid.c5 {
+        grid-template-columns: repeat(5, 1fr)
+      }
+    }
+
+    @media(prefers-reduced-motion:reduce) {
+      * {
+        animation: none !important;
+        transition: none !important;
+        scroll-behavior: auto !important
+      }
+    }
+  
+    .mapbox { height: 58vh; min-height: 340px; border-radius: 16px; overflow: hidden; border: 1px solid var(--line); box-shadow: var(--shadow); background: var(--leaf2); z-index: 0 }
+    .mapbox.sm { height: 240px; min-height: 0 }
+    .maperr { padding: 18px; color: var(--mute) }
+    .legend { display: flex; flex-wrap: wrap; gap: 8px 16px; margin: 12px 0 4px; font-size: 14px; color: var(--mute) }
+    .legend i { display: inline-block; width: 11px; height: 11px; border-radius: 50%; margin-right: 6px; vertical-align: -1px }
+    .pinicon { font-size: 28px; line-height: 28px; text-align: center; filter: drop-shadow(0 2px 2px rgba(0, 0, 0, .35)); background: none; border: 0 }
+    .dirs { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px }
+    .dirs a { flex: 1 1 140px; text-align: center; text-decoration: none; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); color: var(--leaf); font-weight: 700; background: var(--card) }
+    .seg { display: flex; gap: 6px; margin: 0 0 12px; flex-wrap: wrap }
+    .seg button { font: 700 15px "Source Sans 3", system-ui, sans-serif; padding: 10px 16px; border-radius: 999px; border: 1px solid var(--line); background: var(--card); color: var(--ink); cursor: pointer }
+    .seg button.on { background: var(--g1); border-color: var(--g1); color: #fff }
+    .tools { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 12px }
+    .tools input, .tools select { font: 16px "Source Sans 3", system-ui, sans-serif; padding: 11px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--card); color: var(--ink); min-width: 0; flex: 1 1 180px }
+    .tools .btn { margin-top: 0; flex: 0 0 auto }
+    .tblwrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 14px; background: var(--card); max-height: 70vh }
+    table.tbl { width: 100%; border-collapse: collapse; font-size: 14px }
+    .tbl th, .tbl td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap }
+    .tbl th { position: sticky; top: 0; background: var(--leaf2); font-weight: 700 }
+    .ticket { background: var(--card); color: var(--ink); border-radius: 22px; padding: 22px; box-shadow: 0 18px 40px rgba(0, 0, 0, .25) }
+    .ticket .tk-h { display: flex; justify-content: space-between; align-items: center; color: var(--mute); font-size: 14px }
+    .ticket .live { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; color: var(--red) }
+    .ticket .live i { width: 8px; height: 8px; border-radius: 50%; background: var(--red); animation: blink 1.4s infinite }
+    @keyframes blink { 50% { opacity: .25 } }
+    .ticket h3 { font-size: 21px; margin: 10px 0 2px }
+    .ticket .tk-sub { color: var(--mute); margin: 0 0 14px }
+    .tk-clock { background: var(--sun2); border-radius: 16px; padding: 14px 16px; margin-bottom: 16px }
+    .tk-clock b { display: block; font: 800 clamp(40px, 9vw, 58px)/1 "Bricolage Grotesque", system-ui, sans-serif; font-variant-numeric: tabular-nums; letter-spacing: -.02em }
+    .tk-clock span { color: var(--mute); font-size: 14px }
+    .tk-steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; font-size: 13px; color: var(--mute) }
+    .tk-steps li { border-top: 4px solid var(--line); padding-top: 8px }
+    .tk-steps li.done { border-color: var(--leaf); color: var(--ink) }
+    .tk-steps li.now { border-color: var(--sun); color: var(--ink); font-weight: 700 }
+    .faq details { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; margin-bottom: 10px }
+    .faq summary { cursor: pointer; font-weight: 700; font-size: 17px }
+    .faq details p { margin: 10px 0 0; color: var(--mute); max-width: 70ch }
+    .sec .more { display: inline-block; margin-top: 14px; font-weight: 700; color: var(--leaf) }
+    @media(max-width:520px) { .tk-steps { font-size: 12px } .hero { padding-top: 28px } }
+  </style>
+</head>
+
+<body>
+  <div id="app">
+    <div class="empty"><b>🍱</b>Loading FoodBridge...</div>
+  </div>
+  <div id="toast"></div>
+  <script>
+    const esc = t => String(t == null ? "" : t).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    const $ = s => document.querySelector(s), MIN = 60000, now = () => Date.now();
+    const S = { me: null, ls: [], notifs: { items: [], unread: 0 }, impact: null, tab: null, auth: "register", role: "donor", busy: false, pub: null, admin: { ngos: [], stats: null, users: [] }, adm: { tab: "people", q: "", f: "all" }, pin: null };
+    let token = localStorage.getItem("fb_token");
+
+    async function api(path, body, method) {
+      const r = await fetch("/api" + path, { method: method || (body !== undefined ? "POST" : "GET"), headers: { "Content-Type": "application/json", ...(token ? { Authorization: "Bearer " + token } : {}) }, body: body !== undefined ? JSON.stringify(body) : undefined });
+      const j = await r.json().catch(() => ({}));
+      if (r.status === 401 && token && !path.startsWith("/login")) { logout(); throw new Error("Please log in again") }
+      if (!r.ok) { const d = j.detail; throw new Error(Array.isArray(d) ? (d[0].loc.slice(-1)[0] + ": " + d[0].msg) : (d || "Something went wrong")) }
+      return j;
+    }
+    function logout() { token = null; localStorage.removeItem("fb_token"); S.me = null; S.auth = "login"; render(); window.scrollTo(0, 0) }
+    const LBL = { open: ["Waiting for NGO", "warm"], accepted: ["Needs volunteer", "info"], picked: ["On the way", "info"], delivered: ["Delivered", "ok"], expired: ["Expired", "bad"], cancelled: ["Cancelled", "bad"] };
+    const eff = l => l.status === "open" && l.expires_at < now() ? "expired" : l.status;
+    const left = ms => { if (ms <= 0) return "Expired"; const m = Math.floor(ms / MIN); return m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m left` : `${m} min left` };
+    const IC = { home: '<path d="M3 11l9-8 9 8M5 10v10h14V10"/>', donate: '<circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>', feed: '<path d="M4 6h16M4 12h16M4 18h10"/>', mine: '<path d="M5 12l5 5 9-10"/>', alerts: '<path d="M6 16V11a6 6 0 0112 0v5l2 2H4zM10 21h4"/>', impact: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>', verify: '<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/>', overview: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>', map: '<path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/>', data: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 10v10"/>' };
+    const TABS = { donor: [["home", "Home"], ["donate", "Donate"], ["alerts", "Alerts"], ["impact", "Impact"]], ngo: [["feed", "Requests"], ["mine", "My pickups"], ["map", "Map"], ["alerts", "Alerts"], ["impact", "Impact"]], volunteer: [["feed", "Pickups"], ["mine", "My tasks"], ["map", "Map"], ["alerts", "Alerts"], ["impact", "Impact"]], admin: [["verify", "NGOs"], ["data", "Data"], ["map", "Map"], ["overview", "Overview"], ["alerts", "Alerts"]] };
+    const HOME = { donor: "home", ngo: "feed", volunteer: "feed", admin: "verify" };
+    function toast(t) { const e = $("#toast"); e.innerHTML = `<div class="toast">${esc(t)}</div>`; setTimeout(() => e.innerHTML = "", 2800) }
+    const trk = l => { const n = { open: 1, accepted: 2, picked: 3, delivered: 4, expired: 1, cancelled: 1 }[eff(l)]; return `<div class="trk">${["Posted", "NGO", "Pickup", "Delivered"].map((t, i) => `<div class="s ${i < n ? "on" : ""}"><i></i>${t}</div>`).join("")}</div>` };
+    const gmaps = (lat, lon) => `https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}`;
+    function dirs(l) {
+      if (!S.me || S.me.role === "donor" || !l.exact || l.map_lat == null || !["open", "accepted", "picked"].includes(eff(l))) return "";
+      const a = [`<a href="${gmaps(l.map_lat, l.map_lon)}" target="_blank" rel="noopener">Directions to pickup</a>`];
+      if (l.ngo_lat != null) a.push(`<a href="${gmaps(l.ngo_lat, l.ngo_lon)}" target="_blank" rel="noopener">Directions to NGO</a>`);
+      return `<div class="dirs">${a.join("")}</div>`;
+    }
+    function card(l, act) {
+      const st = eff(l), [lb, pc] = LBL[st], lf = l.expires_at - now(), ico = l.packaged ? "🥖" : (l.non_veg ? "🍗" : "🍛"), urgent = lf < 45 * MIN;
+      const timer = st === "delivered" ? `<span class="pill ok">✔ by ${esc(l.vol_name || "volunteer")}</span>` : st === "cancelled" ? "" : st === "expired" ? `<span class="pill bad">Not delivered in time</span>` : `<span class="pill ${urgent ? "bad" : "warm"}">⏱ ${left(lf)}</span>`;
+      const pills = `<span class="pill ${pc}">${lb}</span>${timer}<span class="pill">${l.non_veg ? "Non-veg" : "Veg"}</span>${l.distance_km != null && S.me && S.me.role !== "donor" ? `<span class="pill">📍 ${l.distance_km} km</span>` : ""}${l.route_km != null ? `<span class="pill">🚚 pickup to NGO ${l.route_km} km</span>` : ""}${(l.tags || []).map(t => `<span class="pill good">${esc(t)}</span>`).join("")}`;
+      return `<div class="card s-${st}"><div class="top"><div class="ico">${ico}</div><div><h3>${l.meals} meals: ${esc(l.item)}</h3><div class="meta">${esc(l.donor_name)}${l.address ? " · " + esc(l.address) : ""}${l.donor_phone ? ` · <a href="tel:${esc(l.donor_phone)}">📞 ${esc(l.donor_phone)}</a>` : ""}</div>${l.ngo_name ? `<div class="meta">NGO: ${esc(l.ngo_name)}${l.ngo_phone ? ` · <a href="tel:${esc(l.ngo_phone)}">📞 ${esc(l.ngo_phone)}</a>` : ""}${l.vol_name && st !== "delivered" ? " · Volunteer: " + esc(l.vol_name) : ""}${l.vol_phone ? ` · <a href="tel:${esc(l.vol_phone)}">📞 ${esc(l.vol_phone)}</a>` : ""}</div>` : ""}</div></div><div class="pills">${pills}</div>${trk(l)}${dirs(l)}${act || ""}</div>`;
+    }
+    const VB = me => me.verified === 1 ? "" : `<div class="card" style="margin-bottom:14px"><b>${me.verified === -1 ? "Verification was not approved" : "Waiting for verification"}</b><div class="meta">${me.verified === -1 ? "Please contact support." : "An admin is checking your NGO details. You can browse food now and accept once verified."}</div></div>`;
+    const liveStats = () => S.pub && S.pub.deliveries > 0 ? `<div class="live"><span><b>${S.pub.meals}</b>meals rescued</span><span><b>${S.pub.kg}</b>kg food saved</span><span><b>${S.pub.partners}</b>verified partners</span></div>` : "";
+    const empty = (e, t) => `<div class="empty"><b>${e}</b>${t}</div>`;
+    const float = (a, b, c, cls) => `<div class="float ${cls || ""}">${[a, b, c].map(x => `<div><b>${x[0]}</b><small>${x[1]}</small></div>`).join("")}</div>`;
+    const page = (title, sub, body, pull) => `<div class="hd ${pull ? "big" : ""}"><div class="wrap"><h2>${title}</h2>${sub ? `<p>${sub}</p>` : ""}</div></div><div class="wrap ${pull ? "pull" : "gap"}">${body}</div>`;
+
+    function siteHeader() {
+      const m = S.me;
+      if (!m) return `<header class="site"><div class="wrap"><a class="logo" href="#top"><i>🍱</i>FoodBridge</a><nav class="dnav"><a href="/how-it-works">How it works</a><a href="/faq">FAQ</a><a href="/about">About</a></nav><div class="sp"></div><button class="hbtn hideM" data-act="goauth" data-mode="login">Log in</button><button class="hbtn p" data-act="goauth" data-mode="register">Sign up</button></div></header>`;
+      return `<header class="site"><div class="wrap"><button class="logo" data-tab="${HOME[m.role]}"><i>🍱</i>FoodBridge</button><nav class="dnav">${TABS[m.role].filter(t => t[0] !== "alerts").map(([k, t]) => `<button data-tab="${k}" class="${S.tab === k ? "on" : ""}">${t}</button>`).join("")}</nav><div class="sp"></div>
+  <button class="bellb" data-tab="alerts" aria-label="Alerts"><svg viewBox="0 0 24 24">${IC.alerts}</svg>${S.notifs.unread ? `<span class="dot">${S.notifs.unread}</span>` : ""}</button>
+  <button class="me" data-tab="profile"><span class="av">${esc(m.name[0].toUpperCase())}</span><span class="hideM">${esc(m.name.split(" ")[0])}</span></button></div></header>`;
+    }
+    function footer() {
+      const m = S.me, links = m ? TABS[m.role].map(([k, t]) => `<button class="fl" data-tab="${k}">${t}</button>`).join("") : `<a href="/how-it-works">How it works</a><a href="/faq">FAQ</a><a href="/about">About</a><button class="fl" data-act="goauth" data-mode="register">Create account</button>`;
+      return `<footer class="foot"><div class="wrap"><div class="cols">
+  <div><div class="logo"><i>🍱</i>FoodBridge</div><p>Surplus food from hotels and caterers, delivered to people in need before it spoils.</p><span class="sdg">SDG 2 · Zero Hunger</span></div>
+  <div><h4>${m ? "Go to" : "Explore"}</h4>${links}</div>
+  <div><h4>For</h4><p>Donors: hotels, caterers, canteens</p><p>NGOs and shelters</p><p>Volunteers with a bike or car</p></div>
+  <div><h4>Contact</h4><p>Princekumarsng2005@gmail.com</p><p>Rajkot Gujarat , India</p><a href="/privacy">Privacy policy</a><a href="/terms">Terms of use</a></div></div>
+  <div class="low"><span>© ${new Date().getFullYear()} FoodBridge.</span></div></div></footer>`;
+    }
+    function bottomNav() { return `<nav class="nav">${TABS[S.me.role].map(([k, t]) => `<button data-tab="${k}" class="${S.tab === k ? "on" : ""}"><svg viewBox="0 0 24 24">${IC[k]}</svg>${k === "alerts" && S.notifs.unread ? `<span class="dot">${S.notifs.unread}</span>` : ""}${t}</button>`).join("")}</nav>` }
+
+    function authForm() {
+      const reg = S.auth === "register", R = (k, e, t) => `<button class="role ${S.role === k ? "on" : ""}" data-role="${k}"><b>${e}</b><span>${t}</span></button>`;
+      return `<div class="formcard"><h3 style="margin-top:18px;font-size:20px">${reg ? "Create your account" : "Log in"}</h3>
+  ${reg ? `<div class="roles">${R("donor", "🏨", "Donor")}${R("ngo", "🏠", "NGO")}${R("volunteer", "🛵", "Volunteer")}</div><label>Name or organisation</label><input id="a_name" maxlength="60" autocomplete="name"><label>Area / locality</label><input id="a_area" maxlength="60">` : ""}
+  <label>Mobile number</label><input id="a_phone" inputmode="numeric" maxlength="10" placeholder="10 digits" autocomplete="tel">
+  <label>Password</label><input id="a_pw" type="password" autocomplete="${reg ? "new-password" : "current-password"}">
+  ${reg && S.role === "ngo" ? `<label>NGO registration number (for verification)</label><input id="a_reg" maxlength="40"><div class="two"><div><label>Meals you can take</label><input id="a_cap" type="number" value="100"></div><div><label>Diet rule</label><select id="a_veg"><option value="">Any food</option><option value="1">Veg only</option></select></div></div>` : ""}
+  <div class="err" id="a_err"></div><button class="btn" style="margin-top:4px" data-act="${reg ? "register" : "login"}">${reg ? "Create account" : "Log in"}</button>
+  <button class="link" data-act="swap">${reg ? "Already have an account? Log in" : "New here? Create an account"}</button></div>`;
+    }
+    function landing() {
+      const step = (n, t, d) => `<div class="step"><b>${n}</b><h3>${t}</h3><p>${d}</p></div>`;
+      const ag = (e, t, d) => `<div class="step agent"><div class="em">${e}</div><h3>${t}</h3><p>${d}</p></div>`;
+      const q = (t, d) => `<details><summary>${t}</summary><p>${d}</p></details>`;
+      return `<section id="top" class="hero"><div class="wrap"><div><span class="badge">Fighting food waste and hunger</span><h1>Good food has a deadline.<br>We help you beat it.</h1><p>Hotels and caterers post their surplus. Verified NGOs accept it and volunteers deliver it, all inside a safe-time countdown that everyone can see.</p><div class="btns"><button class="btn sun auto" data-act="goauth" data-mode="register">Get started free</button><button class="btn alt auto" data-act="goauth" data-mode="login">Log in</button></div>${liveStats()}</div>
+  <div class="ticket" role="img" aria-label="Example of a live donation with a countdown"><div class="tk-h"><span>Example donation</span><span class="live"><i></i>Live</span></div><h3>40 meals of veg biryani</h3><p class="tk-sub">Hotel Saffron, Navrangpura</p>
+  <div class="tk-clock"><b id="tick">02:41:09</b><span>safe time left to deliver</span></div>
+  <ol class="tk-steps"><li class="done">Posted</li><li class="done">NGO accepted</li><li class="now">Picked up</li><li>Delivered</li></ol></div></div></section>
+  <section id="how" class="sec"><div class="wrap"><h2>How it works</h2><p>Three steps, and every step is tracked live.</p><div class="grid c3">${step(1, "Donor posts food", "A hotel lists what is left, how many meals, and for how long it stays safe.")}${step(2, "NGO accepts", "Nearby NGOs see it, nearest first. The first to accept gets it.")}${step(3, "Volunteer delivers", "A volunteer picks it up and delivers it before the timer runs out.")}</div><a class="more" href="/how-it-works">See the full walkthrough</a></div></section>
+  <section id="safe-sec" class="sec"><div class="wrap"><h2>What we check on every donation</h2><p>Speed matters, but safety comes first.</p><div class="grid c2">${step("⏱️", "A safe-time deadline", "Cooked food is limited to 4 hours, and 20 minutes are kept aside for handling. The countdown is visible to everyone involved.")}${step("✅", "Verified NGOs only", "An admin checks each NGO's registration number before it can accept food.")}${step("📍", "Nearby, not everywhere", "Alerts go only to NGOs and volunteers within 30 km of the pickup.")}${step("🔒", "Private by default", "The exact address and phone number are shared only with the people in that pickup.")}</div></div></section>
+  <section id="agents" class="sec"><div class="wrap"><h2>Meet the 5 AI agents</h2><p>Each agent has one clear job, so no one needs to coordinate by phone calls.</p><div class="grid c5">${ag("📝", "Donor Agent", "Turns a post into a clear listing: food, meals, diet, type.")}${ag("🛡️", "Safety Agent", "Checks safe time and sets the delivery deadline.")}${ag("🎯", "Matching Agent", "Matches by diet rule, capacity and distance.")}${ag("🛵", "Logistics Agent", "Moves the pickup from accepted to picked up to delivered.")}${ag("📊", "Impact Agent", "Counts meals rescued, kg saved and delivery time.")}</div></div></section>
+  <section id="who" class="sec"><div class="wrap"><h2>Who it's for</h2><p>Pick your role when you sign up.</p><div class="grid c3">${step("🏨", "Donors", "Hotels, caterers, canteens and event halls with leftover food.")}${step("🏠", "NGOs and shelters", "Receive fresh food for the people you serve.")}${step("🛵", "Volunteers", "Anyone with a bike or car who can deliver nearby.")}</div></div></section>
+  <section id="faqs" class="sec"><div class="wrap"><h2>Questions people ask</h2><div class="faq">${q("Does it cost anything?", "No. There is no fee to post, accept or deliver food.")}${q("What if nobody picks the food up in time?", "When the safe time ends, the donation is marked expired and everyone involved gets an alert. Expired food should not be served.")}${q("Who can see my address and phone number?", "Only the donor, the NGO and the volunteer in that pickup, and the platform admin who keeps the service safe.")}${q("Can any NGO accept food?", "Only NGOs approved by the admin, after their registration number is checked.")}</div><a class="more" href="/faq">Read all questions</a></div></section>
+  <section id="auth" class="authsec"><div class="wrap"><h2>${S.auth === "register" ? "Join FoodBridge" : "Welcome back"}</h2>${authForm()}</div></section>`;
+    }
+    function view() {
+      const me = S.me, t = S.tab, ls = S.ls, id = me.id, G = (c, x) => `<div class="grid ${c}">${x}</div>`;
+      if (t === "home") {
+        const m = ls.filter(l => l.donor_id === id), meals = m.filter(l => l.status === "delivered").reduce((a, l) => a + l.meals, 0);
+        return page(`Hello, ${esc(me.name)}`, "Post leftover food in a minute. Nearby NGOs are alerted instantly.", float([meals, "Meals rescued"], [Math.round(meals * 0.4), "kg saved"], [m.length, "Donations"]) + `<h3 class="ttl">Your donations</h3>` + G("c2", m.length ? m.map(l => card(l, l.status === "open" ? `<button class="btn alt" data-act="cancel" data-id="${l.id}">Cancel donation</button>` : "")).join("") : empty("🍽️", "No donations yet.<br>Tap Donate to share your first meal.")), 1) + `<button class="fab" data-tab="donate">+ Donate food</button>`
+      }
+      if (t === "donate") return page("New donation", "The Safety Agent checks it and sets the delivery deadline.", `<div class="narrow"><div class="formcard"><label>What food is it?</label><input id="f_item" placeholder="e.g. Veg biryani" maxlength="80">
+    <div class="two"><div><label>Number of meals</label><input id="f_meals" type="number" min="1" max="5000" value="40"></div><div><label>Safe for (hours)</label><input id="f_hrs" type="number" min="0.5" max="12" step="0.5" value="3"></div></div>
+    <div class="two"><div><label>Diet</label><select id="f_diet"><option value="v">Veg</option><option value="n">Non-veg</option></select></div><div><label>Type</label><select id="f_type"><option value="c">Cooked</option><option value="p">Packaged / raw</option></select></div></div>
+    <label>Pickup address</label><input id="f_addr" placeholder="Street, area" maxlength="120"><label>Pickup spot on the map</label><div id="pickmap" class="mapbox sm"></div><div class="meta" id="pinTxt" style="margin:8px 0 0">${S.pin ? "Pickup spot is set on the map." : me.lat != null ? "Using your saved location. Tap the map or drag the pin to change it." : "Tap the map to set the exact pickup spot, or use your current location."}</div><button class="btn alt" type="button" data-act="pinme">Use my current location</button><div class="safety" id="safe"></div><button class="btn sun" data-act="post">Post donation</button></div></div>`, 1);
+      if (t === "feed" && me.role === "ngo") {
+        const o = ls.filter(l => eff(l) === "open").sort((a, b) => (a.distance_km ?? 1e9) - (b.distance_km ?? 1e9));
+        return page("Food available", "Nearest first. Accept and a volunteer is alerted.", VB(me) + G("c2", o.length ? o.map(l => card(l, `<button class="btn" ${me.verified === 1 ? "" : "disabled"} data-act="accept" data-id="${l.id}">Accept ${l.meals} meals</button>`)).join("") : empty("🔔", "No food listed right now.<br>You will get an alert when a donor posts.")))
+      }
+      if (t === "mine" && me.role === "ngo") { const m = ls.filter(l => l.ngo_id === id); return page("My pickups", "Food you accepted.", G("c2", m.length ? m.map(l => card(l)).join("") : empty("📦", "Nothing accepted yet."))) }
+      if (t === "feed" && me.role === "volunteer") {
+        const p = ls.filter(l => l.status === "accepted" && !l.vol_id && l.expires_at > now()).sort((a, b) => (a.distance_km ?? 1e9) - (b.distance_km ?? 1e9));
+        return page("Pickups for you", "Take one and deliver it before the timer ends.", G("c2", p.length ? p.map(l => card(l, `<button class="btn" data-act="take" data-id="${l.id}">Take this pickup</button>`)).join("") : empty("🛵", "No pickups waiting.<br>You will get an alert when an NGO accepts food.")))
+      }
+      if (t === "mine" && me.role === "volunteer") {
+        const m = ls.filter(l => l.vol_id === id);
+        return page("My tasks", "Mark each step as you go.", G("c2", m.length ? m.map(l => card(l, l.status === "accepted" ? `<button class="btn" data-act="pick" data-id="${l.id}">I picked up the food</button><button class="btn alt" data-act="release" data-id="${l.id}">I can't go, give it back</button>` : l.status === "picked" ? `<button class="btn sun" data-act="deliver" data-id="${l.id}">I delivered it</button>` : "")).join("") : empty("✅", "No tasks yet.")))
+      }
+      if (t === "map") {
+        const L1 = [["#F5A300", "Waiting for NGO"], ["#2A67B0", "Accepted or on the way"], ["#1F8A57", "Delivered"], ["#C93A25", "Expired"]], L2 = me.role === "admin" ? [["#7A4FD6", "Donor"], ["#0E8A8A", "NGO"], ["#D9487D", "Volunteer"]] : [["#2A67B0", "You"]];
+        return page("Map", me.role === "admin" ? "All pickups and every person with a saved location." : me.role === "ngo" ? "Food near you. Colours show the status." : "Pickups waiting and your own deliveries.", `<div id="map" class="mapbox"></div><div class="legend">${[...L1, ...L2].map(([c, x]) => `<span><i style="background:${c}"></i>${x}</span>`).join("")}</div><p class="note" id="mapcount"></p>${me.role === "admin" ? "" : '<p class="note">Until you accept a pickup, the pin shows only an approximate area of about 1 km.</p>'}`)
+      }
+      if (t === "data") {
+        const A = S.adm, ppl = A.tab === "people";
+        const opts = (ppl ? ["all", "donor", "ngo", "volunteer"] : ["all", "open", "accepted", "picked", "delivered", "expired", "cancelled"]).map(o => `<option value="${o}" ${A.f === o ? "selected" : ""}>${o === "all" ? (ppl ? "All roles" : "All statuses") : o}</option>`).join("");
+        return page("All data", "Every person and every donation on the platform. Only you can see this page.", `<div class="seg"><button class="${ppl ? "on" : ""}" data-act="admtab" data-v="people">People (${S.admin.users.length})</button><button class="${ppl ? "" : "on"}" data-act="admtab" data-v="donations">Donations (${S.ls.length})</button></div><div class="tools"><input id="adm_q" type="search" placeholder="Search name, phone, area" value="${esc(A.q)}" aria-label="Search"><select id="adm_f" aria-label="Filter">${opts}</select><button class="btn alt auto" data-act="csv">Download CSV</button></div><div id="admtbl">${admTable()}</div>`)
+      }
+      if (t === "verify") {
+        const L = S.admin.ngos, P = L.filter(n => n.verified === 0);
+        return page("Verify NGOs", "Only verified NGOs can accept food. Check the registration number before approving.", `<h3 class="ttl" style="margin-top:0">Waiting for approval (${P.length})</h3>` + G("c2", P.length ? P.map(n => `<div class="card"><div class="top"><div class="ico">🏠</div><div><h3>${esc(n.name)}</h3><div class="meta">${esc(n.area || "no area")} · ${esc(n.phone)}</div><div class="meta">Registration no: <b>${esc(n.reg_no || "not given")}</b> · takes ${n.cap || "?"} meals${n.veg ? " · veg only" : ""}</div></div></div><div class="two"><button class="btn" data-act="verify" data-ok="1" data-id="${n.id}">Approve</button><button class="btn alt" data-act="verify" data-ok="0" data-id="${n.id}">Reject</button></div></div>`).join("") : empty("✅", "No NGOs waiting.")) + `<h3 class="ttl">All NGOs</h3>` + G("c2", L.filter(n => n.verified !== 0).map(n => `<div class="card"><div class="top"><div class="ico">${n.verified === 1 ? "✅" : "⛔"}</div><div><h3>${esc(n.name)}</h3><div class="meta">${esc(n.area || "")} · ${esc(n.phone)} · ${n.verified === 1 ? "Verified" : "Rejected"}</div></div></div></div>`).join("")))
+      }
+      if (t === "overview") {
+        const u = S.admin.stats ? S.admin.stats.users : {}, q = S.admin.stats ? S.admin.stats.listings : {}, m = S.impact || {};
+        return page("Platform overview", "Live numbers across all users.", float([u.donor || 0, "Donors"], [u.ngo || 0, "NGOs"], [u.volunteer || 0, "Volunteers"]) + float([m.meals || 0, "Meals rescued"], [m.deliveries || 0, "Deliveries"], [m.expired_meals || 0, "Meals expired"]) + `<div class="card"><b>Donations by status</b>${Object.entries(q).map(([k, v]) => `<div class="top" style="justify-content:space-between;margin-top:6px"><span>${esc(k)}</span><b>${v}</b></div>`).join("") || '<div class="meta">None yet.</div>'}</div>`, 1)
+      }
+      if (t === "alerts") return page("Alerts", "Latest updates for you.", G("c2", S.notifs.items.length ? S.notifs.items.map(n => `<div class="alert ${n.read ? "" : "new"}"><i>🔔</i><div>${esc(n.text)}<div class="meta">${new Date(n.created_at).toLocaleString()}</div></div></div>`).join("") : empty("🔔", "No alerts yet.")));
+      if (t === "impact") { const m = S.impact || {}; return page("Community impact", "Counted from real deliveries.", float([m.meals || 0, "Meals rescued"], [m.kg || 0, "kg saved"], [m.deliveries || 0, "Deliveries"]) + float([m.donors || 0, "Donors"], [m.ngos || 0, "NGOs"], [m.volunteers || 0, "Volunteers"]) + `<div class="card"><div class="top" style="justify-content:space-between"><span>Average time, listing to delivery</span><b>${m.avg_min == null ? "-" : m.avg_min + " min"}</b></div><div class="top" style="justify-content:space-between;margin-top:8px"><span>Meals that expired undelivered</span><b>${m.expired_meals || 0}</b></div></div><p class="note">Food-saved weight assumes 0.4 kg per meal.</p>`, 1) }
+      if (t === "profile") return page(esc(me.name), `${esc(me.role)} · ${esc(me.phone)}`, `<div class="narrow"><div class="card"><div class="meta">Area: ${esc(me.area || "not set")}</div><div class="meta">${me.lat != null ? "📍 Location saved" : "📍 Location not set"}</div><button class="btn alt" data-act="loc">Use my current location</button><p class="note">Location lets NGOs and volunteers see how far a pickup is.</p><button class="btn alt" data-act="logout">Log out</button></div></div>`);
+      return "";
+    }
+    const when = ms => ms ? new Date(ms).toLocaleString([], { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "-";
+    const vlab = u => u.role !== "ngo" ? "Active" : u.verified === 1 ? "Verified" : u.verified === -1 ? "Rejected" : "Pending";
+    function admData() {
+      const A = S.adm, q = A.q.trim().toLowerCase(), has = (arr) => !q || arr.join(" ").toLowerCase().includes(q);
+      if (A.tab === "people") return { head: ["Name", "Role", "Phone", "Area", "Status", "Donations", "Meals", "Joined", "Location"], rows: S.admin.users.filter(u => (A.f === "all" || u.role === A.f) && has([u.name, u.phone, u.area, u.reg_no])).map(u => [u.name, u.role, u.phone, u.area || "-", vlab(u), u.donations, u.meals, when(u.created_at), u.lat != null ? `${u.lat.toFixed(4)}, ${u.lon.toFixed(4)}` : "-"]) };
+      return { head: ["ID", "Food", "Meals", "Status", "Donor", "NGO", "Volunteer", "Address", "Posted", "Delivered"], rows: S.ls.filter(l => (A.f === "all" || eff(l) === A.f) && has([l.item, l.donor_name, l.ngo_name, l.vol_name, l.address])).map(l => [l.id, l.item, l.meals, eff(l), l.donor_name, l.ngo_name || "-", l.vol_name || "-", l.address || "-", when(l.created_at), when(l.delivered_at)]) };
+    }
+    function admTable() {
+      const d = admData();
+      return `<div class="meta" style="margin-bottom:8px">${d.rows.length} shown</div><div class="tblwrap"><table class="tbl"><thead><tr>${d.head.map(h => `<th>${h}</th>`).join("")}</tr></thead><tbody>${d.rows.map(r => `<tr>${r.map(c => `<td>${esc(c)}</td>`).join("")}</tr>`).join("") || `<tr><td colspan="${d.head.length}">Nothing matches.</td></tr>`}</tbody></table></div>`;
+    }
+    const csv = rows => rows.map(r => r.map(v => { let x = String(v == null ? "" : v); if (/^[=+\-@]/.test(x)) x = "'" + x; return '"' + x.replace(/"/g, '""') + '"' }).join(",")).join("\n");
+    function download(name, text) { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob(["\ufeff" + text], { type: "text/csv" })); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000) }
+
+    const ST_COL = { open: "#F5A300", accepted: "#2A67B0", picked: "#2A67B0", delivered: "#1F8A57", expired: "#C93A25", cancelled: "#8A8F8C" };
+    const ROLE_COL = { donor: "#7A4FD6", ngo: "#0E8A8A", volunteer: "#D9487D" };
+    const INDIA = [22.97, 78.66];
+    let MAPS = [], LAYER = null, PICK = null;
+    const mapOK = () => typeof L !== "undefined";
+    function baseMap(el, center, zoom) {
+      const m = L.map(el, { scrollWheelZoom: false }).setView(center, zoom);
+      L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: "&copy; OpenStreetMap contributors" }).addTo(m);
+      MAPS.push(m); return m;
+    }
+    function mapRows() {
+      const me = S.me, id = me.id;
+      return S.ls.filter(l => l.map_lat != null && eff(l) !== "cancelled" && (me.role === "admin" || (me.role === "ngo" ? (eff(l) === "open" || l.ngo_id === id) : ((l.status === "accepted" && !l.vol_id && l.expires_at > now()) || l.vol_id === id))));
+    }
+    function drawMap(fit) {
+      const m = MAPS[0]; if (!m) return;
+      if (LAYER) LAYER.remove(); LAYER = L.layerGroup().addTo(m);
+      const pts = [], me = S.me;
+      mapRows().forEach(l => {
+        const st = eff(l), ll = [l.map_lat, l.map_lon], col = ST_COL[st], live = ["open", "accepted", "picked"].includes(st); pts.push(ll);
+        const pop = `<b>${l.meals} meals: ${esc(l.item)}</b><br>${esc(l.donor_name)}${l.exact && l.address ? "<br>" + esc(l.address) : ""}<br>${LBL[st][0]}${live ? " · " + left(l.expires_at - now()) : ""}${l.distance_km != null ? "<br>📍 " + l.distance_km + " km from you" : ""}${l.exact ? (live ? `<br><a href="${gmaps(l.map_lat, l.map_lon)}" target="_blank" rel="noopener">Directions to pickup</a>` : "") : "<br><small>Approximate area. The exact spot is shown after you accept.</small>"}`;
+        if (!l.exact) L.circle(ll, { radius: 700, color: col, weight: 1, dashArray: "4 4", fillOpacity: .12 }).addTo(LAYER);
+        L.circleMarker(ll, { radius: 9, color: "#fff", weight: 2, fillColor: col, fillOpacity: 1 }).bindPopup(pop).addTo(LAYER);
+        if (l.exact && l.ngo_lat != null && l.ngo_name) { const nl = [l.ngo_lat, l.ngo_lon]; pts.push(nl); L.marker(nl, { icon: L.divIcon({ className: "pinicon", html: "🏠", iconSize: [28, 28], iconAnchor: [14, 14] }) }).bindPopup(`<b>Drop-off: ${esc(l.ngo_name)}</b>${l.route_km != null ? "<br>" + l.route_km + " km from pickup" : ""}<br><a href="${gmaps(l.ngo_lat, l.ngo_lon)}" target="_blank" rel="noopener">Directions to NGO</a>`).addTo(LAYER) }
+      });
+      if (me.role === "admin") S.admin.users.filter(u => u.lat != null && u.role !== "admin").forEach(u => { const ll = [u.lat, u.lon]; pts.push(ll); L.circleMarker(ll, { radius: 5, color: ROLE_COL[u.role], weight: 2, fillColor: ROLE_COL[u.role], fillOpacity: .55 }).bindPopup(`<b>${esc(u.name)}</b><br>${esc(u.role)} · ${esc(u.phone)}<br>${esc(u.area || "")}`).addTo(LAYER) });
+      else if (me.lat != null) { const ll = [me.lat, me.lon]; pts.push(ll); L.circleMarker(ll, { radius: 7, color: "#fff", weight: 3, fillColor: "#2A67B0", fillOpacity: 1 }).bindTooltip("You").addTo(LAYER) }
+      if (fit) { pts.length ? m.fitBounds(L.latLngBounds(pts).pad(0.25), { maxZoom: 15 }) : m.setView(INDIA, 5) }
+      const e = $("#mapcount"); if (e) e.textContent = mapRows().length ? "" : "Nothing to show on the map yet.";
+    }
+    function initPick(el) {
+      const me = S.me, start = S.pin ? [S.pin.lat, S.pin.lon] : me.lat != null ? [me.lat, me.lon] : null;
+      const m = baseMap(el, start || INDIA, start ? 16 : 5);
+      const mk = L.marker(start || INDIA, { draggable: true, icon: L.divIcon({ className: "pinicon", html: "📍", iconSize: [30, 30], iconAnchor: [15, 30] }) });
+      const set = (ll, fly) => { S.pin = { lat: +ll.lat.toFixed(6), lon: +ll.lng.toFixed(6) }; mk.setLatLng(ll).addTo(m); if (fly) m.setView(ll, 16); const t = $("#pinTxt"); if (t) t.textContent = "Pickup spot is set on the map." };
+      if (start) mk.addTo(m);
+      mk.on("dragend", () => set(mk.getLatLng())); m.on("click", e => set(e.latlng));
+      PICK = { set };
+    }
+    function afterRender() {
+      MAPS.forEach(m => { try { m.remove() } catch (e) { } }); MAPS = []; LAYER = null; PICK = null;
+      const mm = $("#map"), pm = $("#pickmap");
+      if (!mm && !pm) return;
+      if (!mapOK()) { [mm, pm].forEach(el => { if (el) el.innerHTML = '<div class="maperr">The map could not load. Check your internet connection and reload the page.</div>' }); return }
+      if (mm) { baseMap(mm, INDIA, 5); drawMap(true) }
+      if (pm) initPick(pm);
+    }
+
+    function render() {
+      const app = $("#app");
+      app.innerHTML = siteHeader() + (S.me ? view() : landing()) + footer() + (S.me ? bottomNav() : "");
+      updSafe(); afterRender();
+    }
+    function updSafe() {
+      const e = $("#safe"); if (!e) return; const h = +$("#f_hrs").value || 0, p = $("#f_type").value === "p", w = (p ? h * 60 : Math.min(240, h * 60)) - 20;
+      e.innerHTML = w >= 20 ? `✅ Safety check: deliver within <b>${Math.round(w)} minutes</b>.${p ? "" : " Cooked food is limited to 4 hours."}` : "⚠️ Not enough safe time left. Please do not post this food."
+    }
+    async function refresh() {
+      if (!S.me) return;
+      try {
+        const [l, n, i, me] = await Promise.all([api("/listings"), api("/notifications"), api("/impact"), api("/me")]); S.ls = l; S.notifs = n; S.impact = i; S.me = me;
+        if (me.role === "admin") { const [a, st, us] = await Promise.all([api("/admin/ngos"), api("/admin/stats"), api("/admin/users")]); S.admin = { ngos: a, stats: st, users: us } }
+
+        const typing = ["INPUT", "SELECT", "TEXTAREA"].includes((document.activeElement || {}).tagName);
+        if (S.tab === "map" && MAPS.length) drawMap(false); else if (S.tab !== "donate" && !typing) render()
+      } catch (e) { }
+    }
+    async function start(session) {
+      token = session; localStorage.setItem("fb_token", token); S.me = await api("/me");
+      S.tab = HOME[S.me.role]; await refresh(); render(); window.scrollTo(0, 0);
+    }
+    document.addEventListener("input", e => { if (e.target.id === "adm_q") { S.adm.q = e.target.value; const x = $("#admtbl"); if (x) x.innerHTML = admTable() } });
+    document.addEventListener("change", e => { if (e.target.id === "adm_f") { S.adm.f = e.target.value; const x = $("#admtbl"); if (x) x.innerHTML = admTable() } });
+    document.addEventListener("input", e => { if (["f_hrs", "f_type"].includes(e.target.id)) updSafe() });
+    document.addEventListener("click", async e => {
+      const t = e.target.closest("[data-tab],[data-act],[data-role]"); if (!t || S.busy) return;
+      if (t.dataset.role) { S.role = t.dataset.role; const ids = ["a_name", "a_area", "a_phone", "a_pw"], v = ids.map(i => ($("#" + i) || {}).value); render(); ids.forEach((i, k) => { if ($("#" + i)) $("#" + i).value = v[k] || "" }); return }
+      if (t.dataset.tab) { S.tab = t.dataset.tab; render(); window.scrollTo(0, 0); if (S.tab === "alerts" && S.notifs.unread) { api("/notifications/read", {}).then(refresh) } return }
+      const a = t.dataset.act, id = t.dataset.id; S.busy = true;
+      try {
+        if (a === "goauth") { S.auth = t.dataset.mode; render(); const s = $("#auth"); if (s) s.scrollIntoView({ behavior: "smooth" }) }
+        else if (a === "swap") { S.auth = S.auth === "login" ? "register" : "login"; render(); const s = $("#auth"); if (s) s.scrollIntoView() }
+        else if (a === "login") { try { const r = await api("/login", { phone: $("#a_phone").value.trim(), password: $("#a_pw").value }); await start(r.token) } catch (x) { $("#a_err").textContent = x.message } }
+        else if (a === "register") {
+          try {
+            const b = { name: $("#a_name").value.trim(), phone: $("#a_phone").value.trim(), password: $("#a_pw").value, role: S.role, area: $("#a_area").value.trim() };
+            if (S.role === "ngo") { b.cap = +$("#a_cap").value || 100; b.veg = !!$("#a_veg").value; b.reg_no = $("#a_reg").value.trim() }
+            if (navigator.geolocation) { await new Promise(r => navigator.geolocation.getCurrentPosition(p => { b.lat = p.coords.latitude; b.lon = p.coords.longitude; r() }, () => r(), { timeout: 4000 })) }
+            const r = await api("/register", b); await start(r.token)
+          } catch (x) { $("#a_err").textContent = x.message }
+        }
+        else if (a === "logout") logout();
+        else if (a === "loc") { navigator.geolocation ? navigator.geolocation.getCurrentPosition(async p => { await api("/me/location", { lat: p.coords.latitude, lon: p.coords.longitude }); S.me = await api("/me"); render(); toast("Location saved") }, () => toast("Could not get location. Allow location access."), { timeout: 8000 }) : toast("Location not supported") }
+        else if (a === "post") {
+          const r = await api("/listings", { item: $("#f_item").value.trim(), meals: +$("#f_meals").value, hours: +$("#f_hrs").value, non_veg: $("#f_diet").value === "n", packaged: $("#f_type").value === "p", address: $("#f_addr").value.trim(), ...(S.pin || {}) });
+          S.pin = null; S.tab = "home"; await refresh(); render(); toast(`Posted. Deliver within ${r.window_min} min.`)
+        }
+        else if (a === "pinme") { navigator.geolocation ? navigator.geolocation.getCurrentPosition(p => { if (PICK) PICK.set(L.latLng(p.coords.latitude, p.coords.longitude), true) }, () => toast("Could not get location. Allow location access."), { timeout: 8000 }) : toast("Location not supported") }
+        else if (a === "admtab") { S.adm = { tab: t.dataset.v, q: "", f: "all" }; render() }
+        else if (a === "csv") { const d = admData(); download(`foodbridge-${S.adm.tab}.csv`, csv([d.head, ...d.rows])) }
+        else if (a === "cancel") { await api(`/listings/${id}/cancel`, {}); await refresh(); render(); toast("Donation cancelled") }
+        else if (a === "verify") { await api(`/admin/ngos/${id}/verify`, { approve: t.dataset.ok === "1" }); await refresh(); render(); toast(t.dataset.ok === "1" ? "NGO approved" : "NGO rejected") }
+        else if (["accept", "take", "pick", "deliver", "release"].includes(a)) { await api(`/listings/${id}/${a}`, {}); if (a === "take") S.tab = "mine"; await refresh(); render(); toast({ accept: "Accepted. Volunteers alerted.", take: "Pickup is yours", pick: "Marked as picked up", deliver: "Delivered. Thank you!", release: "Pickup given back" }[a]) }
+      } catch (x) { toast(x.message); await refresh() }
+      S.busy = false;
+    });
+    setInterval(() => { if (S.me) refresh() }, 15000);
+    let tickEnd = now() + 161 * MIN + 9000;
+    setInterval(() => { const e = $("#tick"); if (!e) return; if (tickEnd < now()) tickEnd = now() + 161 * MIN; const s = Math.floor((tickEnd - now()) / 1000), p = n => String(n).padStart(2, "0"); e.textContent = `${p(Math.floor(s / 3600))}:${p(Math.floor(s % 3600 / 60))}:${p(s % 60)}` }, 1000);
+    if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => { });
+    (async () => {
+      try { S.pub = await api("/public-stats") } catch (e) { }
+      if (/^#(login|register)$/.test(location.hash)) S.auth = location.hash.slice(1);
+      if (token) { try { await start(token) } catch (e) { } } render()
+      if (!S.me && /^#(login|register)$/.test(location.hash)) { const x = $("#auth"); if (x) x.scrollIntoView() }
+    })();
+  </script>
+</body>
+
+</html>
