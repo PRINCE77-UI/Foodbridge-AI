@@ -4,7 +4,7 @@
 
 FoodBridge AI is a web platform where hotels, caterers and canteens post their leftover food, verified NGOs accept it, and volunteers deliver it, all inside a safe-time countdown that everyone can see. Built for **SDG 2: Zero Hunger** (and target 12.3 on reducing food waste).
 
-Live demo: [Link ](https://foodbridge-axwt.onrender.com)here. 
+Live demo: [FoodBridge ](https://foodbridge-axwt.onrender.com). 
 
 ---
 
